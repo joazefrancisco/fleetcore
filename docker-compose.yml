@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: fleetcore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fleetcore
+      POSTGRES_USER: fleetcore
+      POSTGRES_PASSWORD: fleetcore
+    ports:
+      - "5433:5432"
+    volumes:
+      - fleetcore-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  fleetcore-postgres-data:
