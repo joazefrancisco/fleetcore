@@ -1,5 +1,6 @@
-package br.com.fleetcore.domain.entity;
+package br.com.fleetcore.domain.owner.entity;
 
+import br.com.fleetcore.domain.vehicle.entity.Vehicle;
 import jakarta.persistence.*;
 import lombok.*;
 
