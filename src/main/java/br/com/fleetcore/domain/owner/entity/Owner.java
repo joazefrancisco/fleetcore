@@ -1,9 +1,12 @@
-package br.com.fleetcore.domain.entity;
+package br.com.fleetcore.domain.owner.entity;
 
+import br.com.fleetcore.domain.vehicle.entity.Vehicle;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -11,47 +14,26 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "vehicle")
-public class Vehicle {
+@Table(name = "owner")
+public class Owner {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(unique = true, length = 10)
-    private String plate;
-
-    @Column(name = "pre_registration_code", unique = true, length = 10)
-    private String preRegistrationCode;
-
-    @Column(nullable = false, unique = true, length = 17)
-    private String chassis;
-
+    @Column(nullable = false, length = 150)
+    private String name;
     @Column(nullable = false, unique = true, length = 20)
-    private String renavam;
-
-    @Column(nullable = false)
-    private Long mileage;
-
-    @Column(nullable = false, length = 100)
-    private String brand;
-
-    @Column(nullable = false, length = 100)
-    private String model;
-
+    private String document;
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
-
-    @ManyToOne
-    @JoinColumn(name = "owner_id", nullable = false)
-    private Owner owner;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    @Builder.Default
+    @OneToMany(mappedBy = "owner")
+    private List<Vehicle> vehicles = new ArrayList<>();
 
     @PrePersist
     protected void onCreate(){
@@ -61,7 +43,7 @@ public class Vehicle {
     }
 
     @PreUpdate
-    protected  void onUpdate(){
+    protected void onUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
 }
