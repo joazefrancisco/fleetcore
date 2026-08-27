@@ -19,7 +19,10 @@ CREATE TABLE model (
         REFERENCES brand (id),
 
      CONSTRAINT uk_model_brand_name
-        UNIQUE (brand_id, name)
+        UNIQUE (brand_id, name),
+
+     CONSTRAINT uk_model_id_brand
+         UNIQUE (id, brand_id)
 );
 
 CREATE TABLE vehicle_configuration (
