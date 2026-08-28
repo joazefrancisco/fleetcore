@@ -25,9 +25,7 @@ public class BrandController {
     public ResponseEntity<BrandResponse> create(
             @RequestBody @Valid CreateBrandRequest request) {
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(brandService.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(brandService.create(request));
     }
 
     @GetMapping
@@ -35,18 +33,14 @@ public class BrandController {
             @RequestParam(required = false) Boolean active,
             Pageable pageable) {
 
-        return ResponseEntity.ok(
-                brandService.findAll(active, pageable)
-        );
+        return ResponseEntity.ok(brandService.findAll(active, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<BrandDetails> findById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                brandService.findById(id)
-        );
+        return ResponseEntity.ok(brandService.findById(id));
     }
 
     @PutMapping("/{id}")
@@ -54,9 +48,7 @@ public class BrandController {
             @PathVariable Long id,
             @RequestBody @Valid UpdateBrandRequest request) {
 
-        return ResponseEntity.ok(
-                brandService.update(id, request)
-        );
+        return ResponseEntity.ok(brandService.update(id, request));
     }
 
     @PatchMapping("/{id}/status")

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 @Service
 @RequiredArgsConstructor
 public class BrandService {
@@ -61,10 +62,7 @@ public class BrandService {
     @Transactional(readOnly = true)
     public BrandDetails findById(Long id) {
 
-        Brand brand = brandRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Brand not found")
-                );
+        Brand brand = this.findByIdOrThrow(id);
 
         return new BrandDetails(
                 brand.getId(),
@@ -75,18 +73,14 @@ public class BrandService {
         );
     }
 
+    @Transactional
     public BrandDetails update(Long id, UpdateBrandRequest request) {
 
-        Brand brand = brandRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Brand not found")
-                );
-
-        if (!brand.getName().equalsIgnoreCase(request.name())
-                && brandRepository.existsByNameIgnoreCase(request.name())) {
-
+        if (brandRepository.existsByNameIgnoreCase(request.name())) {
             throw new IllegalArgumentException("Brand already exists");
         }
+
+        Brand brand = this.findByIdOrThrow(id);
 
         brand.setName(request.name());
 
@@ -101,15 +95,20 @@ public class BrandService {
         );
     }
 
+    @Transactional
     public void updateStatus(Long id, boolean active) {
 
-        Brand brand = brandRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Brand not found")
-                );
+        Brand brand = this.findByIdOrThrow(id);
 
         brand.setActive(active);
 
         brandRepository.save(brand);
+    }
+
+    protected Brand findByIdOrThrow(Long id){
+        return brandRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Brand not found")
+                );
     }
 }
