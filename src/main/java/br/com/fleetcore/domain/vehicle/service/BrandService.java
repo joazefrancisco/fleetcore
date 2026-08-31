@@ -6,6 +6,9 @@ import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
+import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
+import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import br.com.fleetcore.domain.vehicle.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +27,7 @@ public class BrandService {
     public BrandResponse create(CreateBrandRequest request) {
 
         if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new IllegalArgumentException("Brand already exists");
+            throw new BrandAlreadyExistsException("Brand already exists");
         }
 
         Brand brand = Brand.builder()
@@ -73,7 +76,7 @@ public class BrandService {
         Brand brand = this.findByIdOrThrow(id);
 
         if (!brand.isActive()) {
-            throw new IllegalArgumentException("Brand inactive");
+            throw new BrandInactiveException("Brand inactive");
         }
 
         if (brand.getName().equalsIgnoreCase(request.name())) {
@@ -81,7 +84,7 @@ public class BrandService {
         }
 
         if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new IllegalArgumentException("Brand already exists");
+            throw new BrandAlreadyExistsException("Brand already exists");
         }
 
         brand.setName(request.name());
@@ -104,7 +107,7 @@ public class BrandService {
     protected Brand findByIdOrThrow(Long id){
         return brandRepository.findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Brand not found")
+                        new BrandNotFoundException("Brand not found")
                 );
     }
 
