@@ -64,35 +64,28 @@ public class BrandService {
 
         Brand brand = this.findByIdOrThrow(id);
 
-        return new BrandDetails(
-                brand.getId(),
-                brand.getName(),
-                brand.isActive(),
-                brand.getCreatedAt(),
-                brand.getUpdatedAt()
-        );
+        return this.toDetails(brand);
     }
 
     @Transactional
     public BrandDetails update(Long id, UpdateBrandRequest request) {
 
+        Brand brand = this.findByIdOrThrow(id);
+
+        if (!brand.isActive()) {
+            throw new IllegalArgumentException("Brand inactive");
+        }
+
+        if (brand.getName().equalsIgnoreCase(request.name())) {
+            return toDetails(brand);
+        }
+
         if (brandRepository.existsByNameIgnoreCase(request.name())) {
             throw new IllegalArgumentException("Brand already exists");
         }
 
-        Brand brand = this.findByIdOrThrow(id);
-
         brand.setName(request.name());
-
-        Brand updatedBrand = brandRepository.save(brand);
-
-        return new BrandDetails(
-                updatedBrand.getId(),
-                updatedBrand.getName(),
-                updatedBrand.isActive(),
-                updatedBrand.getCreatedAt(),
-                updatedBrand.getUpdatedAt()
-        );
+        return toDetails(brandRepository.save(brand));
     }
 
     @Transactional
@@ -100,8 +93,11 @@ public class BrandService {
 
         Brand brand = this.findByIdOrThrow(id);
 
-        brand.setActive(active);
+        if (brand.isActive() == active){
+            return;
+        }
 
+        brand.setActive(active);
         brandRepository.save(brand);
     }
 
@@ -110,5 +106,15 @@ public class BrandService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Brand not found")
                 );
+    }
+
+    private BrandDetails toDetails(Brand brand){
+        return new BrandDetails(
+                brand.getId(),
+                brand.getName(),
+                brand.isActive(),
+                brand.getCreatedAt(),
+                brand.getUpdatedAt()
+        );
     }
 }
