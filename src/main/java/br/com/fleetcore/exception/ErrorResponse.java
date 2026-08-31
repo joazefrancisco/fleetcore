@@ -7,11 +7,10 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record ErrorResponse(
-
         LocalDateTime timestamp,
         Integer status,
         String error,
         String message,
-        String patch,
+        String path,
         List<FieldErrorResponse> errors
 ) {}

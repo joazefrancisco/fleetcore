@@ -61,10 +61,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException exceptions,
+            MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
-        List<FieldErrorResponse> errors = exceptions
+        List<FieldErrorResponse> errors = exception
                 .getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -88,7 +88,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(
-            HttpStatus.BAD_REQUEST,
+                HttpStatus.BAD_REQUEST,
                 "BAD_REQUEST",
                 "Invalid parameter value",
                 request.getRequestURI(),
@@ -100,13 +100,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception exception,
             HttpServletRequest request
-    ){
+    ) {
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "INTERNAL_SERVER_ERROR",
                 "An unexpected error occurred",
                 request.getRequestURI(),
-                null);
+                null
+        );
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(

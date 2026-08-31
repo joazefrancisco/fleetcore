@@ -64,14 +64,18 @@ public class BrandService {
     @Transactional
     public BrandDetails update(Long id, UpdateBrandRequest request) {
 
-        if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BrandAlreadyExistsException("Brand already exists");
-        }
-
         Brand brand = this.findByIdOrThrow(id);
 
         if (!brand.isActive()) {
             throw new BrandInactiveException("Brand inactive");
+        }
+
+        if (brand.getName().equalsIgnoreCase(request.name())) {
+            return brandMapper.toDetails(brand);
+        }
+
+        if (brandRepository.existsByNameIgnoreCase(request.name())) {
+            throw new BrandAlreadyExistsException("Brand already exists");
         }
 
         brand.setName(request.name());
@@ -79,7 +83,6 @@ public class BrandService {
         Brand savedBrand = brandRepository.save(brand);
 
         return brandMapper.toDetails(savedBrand);
-
     }
 
     @Transactional
