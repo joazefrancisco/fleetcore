@@ -9,6 +9,7 @@ import br.com.fleetcore.domain.vehicle.entity.Brand;
 import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
+import br.com.fleetcore.domain.vehicle.mapper.BrandMapper;
 import br.com.fleetcore.domain.vehicle.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BrandService {
 
     private final BrandRepository brandRepository;
+    private final BrandMapper brandMapper;
 
     @Transactional()
     public BrandResponse create(CreateBrandRequest request) {
@@ -30,17 +32,11 @@ public class BrandService {
             throw new BrandAlreadyExistsException("Brand already exists");
         }
 
-        Brand brand = Brand.builder()
-                .name(request.name())
-                .build();
+        Brand brand = brandMapper.toEntity(request);
 
         Brand savedBrand = brandRepository.save(brand);
 
-        return new BrandResponse(
-                savedBrand.getId(),
-                savedBrand.getName(),
-                savedBrand.isActive()
-        );
+        return brandMapper.toResponse(savedBrand);
     }
 
     @Transactional(readOnly = true)
@@ -54,12 +50,7 @@ public class BrandService {
             brands = brandRepository.findAllByActive(active, pageable);
         }
 
-        return brands.map(brand ->
-                new BrandSummary(
-                        brand.getId(),
-                        brand.getName()
-                )
-        );
+        return brands.map(brandMapper::toSummary);
     }
 
     @Transactional(readOnly = true)
@@ -67,11 +58,15 @@ public class BrandService {
 
         Brand brand = this.findByIdOrThrow(id);
 
-        return this.toDetails(brand);
+        return brandMapper.toDetails(brand);
     }
 
     @Transactional
     public BrandDetails update(Long id, UpdateBrandRequest request) {
+
+        if (brandRepository.existsByNameIgnoreCase(request.name())) {
+            throw new BrandAlreadyExistsException("Brand already exists");
+        }
 
         Brand brand = this.findByIdOrThrow(id);
 
@@ -79,16 +74,12 @@ public class BrandService {
             throw new BrandInactiveException("Brand inactive");
         }
 
-        if (brand.getName().equalsIgnoreCase(request.name())) {
-            return toDetails(brand);
-        }
-
-        if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new BrandAlreadyExistsException("Brand already exists");
-        }
-
         brand.setName(request.name());
-        return toDetails(brandRepository.save(brand));
+
+        Brand savedBrand = brandRepository.save(brand);
+
+        return brandMapper.toDetails(savedBrand);
+
     }
 
     @Transactional
@@ -109,15 +100,5 @@ public class BrandService {
                 .orElseThrow(() ->
                         new BrandNotFoundException("Brand not found")
                 );
-    }
-
-    private BrandDetails toDetails(Brand brand){
-        return new BrandDetails(
-                brand.getId(),
-                brand.getName(),
-                brand.isActive(),
-                brand.getCreatedAt(),
-                brand.getUpdatedAt()
-        );
     }
 }
