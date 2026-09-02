@@ -70,7 +70,7 @@ public class BrandService {
             throw new BrandInactiveException("Brand inactive");
         }
 
-        if (brand.getName().equalsIgnoreCase(request.name())) {
+        if (brand.getName().equals(request.name())) {
             return brandMapper.toDetails(brand);
         }
 
