@@ -9,5 +9,7 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
 
     boolean existsByNameIgnoreCase(String name);
 
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
     Page<Brand> findAllByActive(boolean active, Pageable pageable);
 }

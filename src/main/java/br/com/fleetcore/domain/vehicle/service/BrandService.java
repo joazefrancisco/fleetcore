@@ -74,7 +74,7 @@ public class BrandService {
             return brandMapper.toDetails(brand);
         }
 
-        if (brandRepository.existsByNameIgnoreCase(request.name())) {
+        if (brandRepository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
             throw new BrandAlreadyExistsException("Brand already exists");
         }
 
