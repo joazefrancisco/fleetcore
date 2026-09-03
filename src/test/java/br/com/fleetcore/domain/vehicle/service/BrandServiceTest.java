@@ -1,7 +1,9 @@
 package br.com.fleetcore.domain.vehicle.service;
 
+import br.com.fleetcore.domain.vehicle.dto.BrandDetails;
 import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
+import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
 import br.com.fleetcore.domain.vehicle.mapper.BrandMapper;
 import br.com.fleetcore.domain.vehicle.repository.BrandRepository;
@@ -11,10 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BrandServiceTest {
@@ -72,5 +76,140 @@ public class BrandServiceTest {
         verify(brandMapper).toEntity(request);
         verify(brandRepository).save(brand);
         verify(brandMapper).toResponse(savedBrand);
+    }
+
+    @Test
+    void update_ShouldUpdateBrand_WhenNewNameIsAvailable() {
+
+        Long brandId = 1L;
+
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo Trucks");
+
+        Brand brand = Brand.builder()
+                .id(brandId)
+                .name("Volvo")
+                .active(true)
+                .build();
+
+        Brand updatedBrand = Brand.builder()
+                .id(brandId)
+                .name("Volvo Trucks")
+                .active(true)
+                .build();
+
+        BrandDetails response = new BrandDetails(
+                brandId,
+                "Volvo Trucks",
+                true,
+                updatedBrand.getCreatedAt(),
+                updatedBrand.getUpdatedAt()
+        );
+
+        when(brandRepository.findById(brandId))
+                .thenReturn(Optional.of(brand));
+
+        when(brandRepository.existsByNameIgnoreCaseAndIdNot(
+                "Volvo Trucks",
+                brandId
+        )).thenReturn(false);
+
+        when(brandRepository.save(brand))
+                .thenReturn(updatedBrand);
+
+        when(brandMapper.toDetails(updatedBrand))
+                .thenReturn(response);
+
+        BrandDetails result = brandService.update(brandId, request);
+
+        assertNotNull(result);
+        assertEquals(brandId, result.id());
+        assertEquals("Volvo Trucks", result.name());
+
+        verify(brandRepository).findById(brandId);
+        verify(brandRepository).existsByNameIgnoreCaseAndIdNot(
+                "Volvo Trucks",
+                brandId
+        );
+
+        verify(brandRepository).save(brand);
+        verify(brandMapper).toDetails(updatedBrand);
+    }
+
+    @Test
+    void updateStatus_ShouldDeactivateBrand_WhenActiveIsFalse() {
+
+        Long brandId = 1L;
+
+        boolean active = false;
+
+        Brand brand = Brand.builder()
+                .id(brandId)
+                .name("Volvo")
+                .active(true)
+                .build();
+
+        when(brandRepository.findById(brandId))
+                .thenReturn(Optional.of(brand));
+
+        brandService.updateStatus(brandId, active);
+
+        assertEquals(active, brand.isActive());
+        verify(brandRepository).findById(brandId);
+        verify(brandRepository).save(brand);
+    }
+
+    @Test
+    void updateStatus_ShouldNotSave_WhenStatusIsAlreadyActive(){
+        Long brandId = 1L;
+
+        boolean active = true;
+
+        Brand brand = Brand.builder()
+                .id(brandId)
+                .name("Volvo")
+                .active(true)
+                .build();
+
+        when(brandRepository.findById(brandId))
+                .thenReturn(Optional.of(brand));
+
+        brandService.updateStatus(brandId, active);
+
+        verify(brandRepository).findById(brandId);
+        verify(brandRepository, never()).save(brand);
+    }
+
+    @Test
+    void findById_ShouldReturnBrandDetails_WhenBrandExists(){
+        Long brandId = 1L;
+
+        Brand brand = Brand.builder()
+                .id(brandId)
+                .name("Volvo")
+                .active(true)
+                .build();
+
+        BrandDetails brandDetails = new BrandDetails(
+                brandId,
+                "Volvo",
+                true,
+                brand.getCreatedAt(),
+                brand.getUpdatedAt());
+
+        when(brandRepository.findById(brandId))
+                .thenReturn(Optional.of(brand));
+
+        when(brandMapper.toDetails(brand))
+                .thenReturn(brandDetails);
+
+        BrandDetails result = brandService.findById(brandId);
+
+        assertNotNull(result);
+        assertEquals(brandId, result.id());
+        assertEquals(brand.isActive(), result.active());
+        assertEquals("Volvo", result.name());
+
+        verify(brandRepository).findById(brandId);
+        verify(brandMapper).toDetails(brand);
     }
 }
