@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BrandService {
 
     private final BrandRepository brandRepository;
+
     private final BrandMapper brandMapper;
 
     @Transactional()

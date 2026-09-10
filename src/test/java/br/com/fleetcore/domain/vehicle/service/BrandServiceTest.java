@@ -2,6 +2,9 @@ package br.com.fleetcore.domain.vehicle.service;
 
 import br.com.fleetcore.domain.vehicle.dto.*;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
+import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
+import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import br.com.fleetcore.domain.vehicle.mapper.BrandMapper;
 import br.com.fleetcore.domain.vehicle.repository.BrandRepository;
 import org.junit.jupiter.api.Test;
@@ -14,11 +17,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,11 +45,7 @@ public class BrandServiceTest {
                 .name("Volvo")
                 .build();
 
-        Brand savedBrand = Brand.builder()
-                .id(1L)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand savedBrand = this.createBrand(1L, "Volvo", true);
 
         BrandResponse response = new BrandResponse(
                 1L,
@@ -86,17 +85,9 @@ public class BrandServiceTest {
 
         UpdateBrandRequest request = new UpdateBrandRequest("Volvo Trucks");
 
-        Brand brand = Brand.builder()
-                .id(brandId)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", true);
 
-        Brand updatedBrand = Brand.builder()
-                .id(brandId)
-                .name("Volvo Trucks")
-                .active(true)
-                .build();
+        Brand updatedBrand = this.createBrand(1L, "Volvo Trucks", true);
 
         BrandDetails response = new BrandDetails(
                 brandId,
@@ -143,11 +134,7 @@ public class BrandServiceTest {
 
         boolean active = false;
 
-        Brand brand = Brand.builder()
-                .id(brandId)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", true);
 
         when(brandRepository.findById(brandId))
                 .thenReturn(Optional.of(brand));
@@ -165,11 +152,7 @@ public class BrandServiceTest {
 
         boolean active = true;
 
-        Brand brand = Brand.builder()
-                .id(brandId)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", true);
 
         when(brandRepository.findById(brandId))
                 .thenReturn(Optional.of(brand));
@@ -184,11 +167,7 @@ public class BrandServiceTest {
     void findById_ShouldReturnBrandDetails_WhenBrandExists(){
         Long brandId = 1L;
 
-        Brand brand = Brand.builder()
-                .id(brandId)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", true);
 
         BrandDetails brandDetails = new BrandDetails(
                 brandId,
@@ -221,17 +200,10 @@ public class BrandServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10);
 
-        Brand volvo = Brand.builder()
-                .id(1L)
-                .name("Volvo")
-                .active(true)
-                .build();
+        Brand volvo = this.createBrand(1L, "Volvo", true);
 
-        Brand scania = Brand.builder()
-                .id(2L)
-                .name("Scania")
-                .active(false)
-                .build();
+        Brand scania = this.createBrand(2L, "Scania", false);
+
 
         BrandSummary volvoSummary = new BrandSummary(1L, "Volvo");
         BrandSummary scaniaSummary = new BrandSummary(2L, "Scania");
@@ -264,11 +236,7 @@ public class BrandServiceTest {
     void findAll_ShouldReturnActiveBrands_WhenActiveIsTrue(){
         boolean active = true;
 
-        Brand brand = Brand.builder()
-                .id(1L)
-                .name("Volvo")
-                .active(active)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", active);
 
         Pageable pageable = PageRequest.of(0, 1);
 
@@ -297,11 +265,7 @@ public class BrandServiceTest {
     void findAll_ShouldReturnInactiveBrands_WhenActiveIsFalse(){
         boolean active = false;
 
-        Brand brand = Brand.builder()
-                .id(1L)
-                .name("Volvo")
-                .active(active)
-                .build();
+        Brand brand = this.createBrand(1L, "Volvo", active);
 
         Pageable pageable = PageRequest.of(0, 1);
 
@@ -324,5 +288,134 @@ public class BrandServiceTest {
 
         verify(brandRepository).findAllByActive(active, pageable);
         verify(brandMapper).toSummary(brand);
+    }
+
+    @Test
+    void create_ShouldThrowException_WhenBrandAlready(){
+
+        String brand = "Volvo";
+
+        CreateBrandRequest request = new CreateBrandRequest(brand);
+
+        when(brandRepository.existsByNameIgnoreCase(brand))
+                .thenReturn(true);
+
+        assertThrows(BrandAlreadyExistsException.class,
+                () -> brandService.create(request));
+
+        verify(brandRepository).existsByNameIgnoreCase(brand);
+        verify(brandMapper, never()).toEntity(any());
+        verify(brandRepository, never()).save(any());
+    }
+
+    @Test
+    void findById_ShouldThrowBrandNotFoundException_WhenBrandDoesNotExist(){
+
+        Long idBrand = 1L;
+
+        when(brandRepository.findById(idBrand))
+                .thenReturn(Optional.empty());
+
+        assertThrows(BrandNotFoundException.class,
+                () -> brandService.findById(idBrand));
+
+        verify(brandRepository).findById(idBrand);
+        verify(brandMapper, never()).toDetails(any());
+    }
+
+    @Test
+    void update_ShouldThrowBrandNotFoundException_WhenBrandDoesNotExist(){
+        Long idBrand = 1L;
+
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo");
+
+        when(brandRepository.findById(idBrand))
+                .thenReturn(Optional.empty());
+
+        assertThrows(BrandNotFoundException.class,
+                () -> brandService.update(idBrand, request));
+
+        verify(brandRepository).findById(any());
+        verify(brandMapper, never()).toDetails(any());
+    }
+
+    @Test
+    void update_ShouldThrowBrandInactiveException_WhenBrandIsInactive(){
+        Long idBrand = 1L;
+
+        UpdateBrandRequest request = new UpdateBrandRequest("Scania");
+
+        Brand savedBrand = this.createBrand(idBrand, "Volvo", false);
+
+        when(brandRepository.findById(idBrand))
+                .thenReturn(Optional.of(savedBrand));
+
+        assertThrows(BrandInactiveException.class,
+                () -> brandService.update(idBrand, request));
+
+        verify(brandRepository).findById(idBrand);
+        verify(brandRepository, never()).save(any());
+        verify(brandMapper, never()).toDetails(any());
+    }
+
+    @Test
+    void update_ShouldReturnDetails_WhenBrandNameIsEqual(){
+        Long idBrand = 1L;
+
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo");
+
+        Brand savedBrand = this.createBrand(idBrand, "Volvo", true);
+
+        BrandDetails brandDetails = new BrandDetails(
+                idBrand,
+                "Volvo",
+                true,
+                LocalDateTime.now(),
+                LocalDateTime.now());
+
+        when(brandRepository.findById(idBrand))
+                .thenReturn(Optional.of(savedBrand));
+
+        when(brandMapper.toDetails(savedBrand))
+                .thenReturn(brandDetails);
+
+        BrandDetails result = brandService.update(idBrand, request);
+
+        assertNotNull(result);
+        assertEquals(request.name(), result.name());
+
+        verify(brandRepository).findById(idBrand);
+        verify(brandMapper).toDetails(savedBrand);
+        verify(brandRepository, never()).save(any());
+    }
+
+    @Test
+    void update_ShouldThrowBrandAlreadyExistsException_WhenNewNameAlreadyExists(){
+        Long idBrand = 1L;
+
+        UpdateBrandRequest request = new UpdateBrandRequest("Scania");
+
+        Brand savedBrand = this.createBrand(idBrand, "Volvo", true);
+
+        when(brandRepository.findById(idBrand))
+                .thenReturn(Optional.of(savedBrand));
+
+        when(brandRepository.existsByNameIgnoreCaseAndIdNot(request.name(), idBrand))
+                .thenReturn(true);
+
+        assertThrows(BrandAlreadyExistsException.class,
+                () -> brandService.update(idBrand, request));
+
+        verify(brandRepository).findById(idBrand);
+        verify(brandRepository, never()).save(any());
+        verify(brandMapper, never()).toDetails(any());
+    }
+
+    private Brand createBrand(Long id, String name, boolean active){
+        return Brand.builder()
+                .id(id)
+                .name(name)
+                .active(active)
+                .build();
     }
 }
