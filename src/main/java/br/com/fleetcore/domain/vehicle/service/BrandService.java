@@ -81,7 +81,7 @@ public class BrandService {
 
         brand.setName(request.name());
 
-        Brand savedBrand = brandRepository.save(brand);
+        Brand savedBrand = brandRepository.saveAndFlush(brand);
 
         return brandMapper.toDetails(savedBrand);
     }
