@@ -105,7 +105,7 @@ public class BrandServiceTest {
                 brandId
         )).thenReturn(false);
 
-        when(brandRepository.save(brand))
+        when(brandRepository.saveAndFlush(brand))
                 .thenReturn(updatedBrand);
 
         when(brandMapper.toDetails(updatedBrand))
@@ -123,7 +123,7 @@ public class BrandServiceTest {
                 brandId
         );
 
-        verify(brandRepository).save(brand);
+        verify(brandRepository).saveAndFlush(brand);
         verify(brandMapper).toDetails(updatedBrand);
     }
 
@@ -354,7 +354,7 @@ public class BrandServiceTest {
                 () -> brandService.update(idBrand, request));
 
         verify(brandRepository).findById(idBrand);
-        verify(brandRepository, never()).save(any());
+        verify(brandRepository, never()).saveAndFlush(any());
         verify(brandMapper, never()).toDetails(any());
     }
 
@@ -386,7 +386,7 @@ public class BrandServiceTest {
 
         verify(brandRepository).findById(idBrand);
         verify(brandMapper).toDetails(savedBrand);
-        verify(brandRepository, never()).save(any());
+        verify(brandRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -407,7 +407,7 @@ public class BrandServiceTest {
                 () -> brandService.update(idBrand, request));
 
         verify(brandRepository).findById(idBrand);
-        verify(brandRepository, never()).save(any());
+        verify(brandRepository, never()).saveAndFlush(any());
         verify(brandMapper, never()).toDetails(any());
     }
 
