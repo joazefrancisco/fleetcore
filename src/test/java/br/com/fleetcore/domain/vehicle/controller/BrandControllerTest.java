@@ -3,6 +3,7 @@ package br.com.fleetcore.domain.vehicle.controller;
 import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
+import br.com.fleetcore.domain.vehicle.entity.Brand;
 import br.com.fleetcore.domain.vehicle.service.BrandService;
 import org.springframework.data.domain.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -92,6 +93,56 @@ public class BrandControllerTest {
 
         mockMvc.perform(get("/brands")
                         .param("size", "10")
+                        .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1L))
+                .andExpect(jsonPath("$.content[0].name").value("Volvo"));
+
+        verify(brandService).findAll(active, pageable);
+    }
+
+    @Test
+    void findAll_ShouldReturnActiveBrands_WhenActiveIsTrue() throws Exception {
+
+        boolean active = true;
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
+
+        when(brandService.findAll(active, pageable))
+                .thenReturn(brandPage);
+
+        mockMvc.perform(get("/brands")
+                                .param("active", "true")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1L))
+                .andExpect(jsonPath("$.content[0].name").value("Volvo"));
+
+        verify(brandService).findAll(active, pageable);
+    }
+
+    @Test
+    void findAll_ShouldReturnInactiveBrands_WhenActiveIsFalse() throws Exception {
+
+        boolean active = false;
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
+
+        when(brandService.findAll(active, pageable))
+                .thenReturn(brandPage);
+
+        mockMvc.perform(get("/brands")
+                        .param("active", "false")
                         .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
