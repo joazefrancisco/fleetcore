@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Restful API Tool ###
+.RestfulApiTool/
