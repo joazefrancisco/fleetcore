@@ -1,9 +1,11 @@
 package br.com.fleetcore.domain.vehicle.controller;
 
+import br.com.fleetcore.domain.vehicle.dto.BrandDetails;
 import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
-import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
+import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import br.com.fleetcore.domain.vehicle.service.BrandService;
 import org.springframework.data.domain.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,11 +20,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -150,6 +152,163 @@ public class BrandControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("Volvo"));
 
         verify(brandService).findAll(active, pageable);
+    }
+
+
+    @Test
+    void findById_ShouldReturnOk_WhenRequestIsValid() throws Exception {
+
+        Long id = 1L;
+
+        BrandDetails brandDetails = new BrandDetails(id,
+                "Volvo",
+                true,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        when(brandService.findById(id))
+                .thenReturn(brandDetails);
+
+        mockMvc.perform(get("/brands/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.name").value("Volvo"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+
+        verify(brandService).findById(id);
+    }
+
+
+    @Test
+    void findById_ShouldReturnNotFound_WhenBrandIsNotFound() throws Exception {
+
+        Long id = 2L;
+
+        when(brandService.findById(id))
+                .thenThrow(new BrandNotFoundException("Brand not found"));
+
+        mockMvc.perform(get("/brands/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+
+        )
+                .andExpect(status().isNotFound());
+
+        verify(brandService).findById(id);
+    }
+
+    @Test
+    void update_ShouldReturnOk_WhenRequestIsValid() throws Exception {
+
+        Long id = 1L;
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo Updated");
+
+        BrandDetails brandDetails = new BrandDetails(id,
+                "Volvo Updated",
+                true,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+
+        when(brandService.update(id, request))
+                .thenReturn(brandDetails);
+
+        mockMvc.perform(put("/brands/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.name").value("Volvo Updated"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+
+        verify(brandService).update(id, request);
+    }
+
+    @Test
+    void update_ShouldReturnBadRequest_WhenRequestIsInvalid() throws Exception {
+
+        Long id = 1L;
+        UpdateBrandRequest request = new UpdateBrandRequest("");
+
+        mockMvc.perform(put("/brands/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
+                .andExpect(status().isBadRequest());
+
+        verify(brandService, never()).update(id, request);
+    }
+
+    @Test
+    void update_ShouldReturnNotFound_WhenBrandIsNotFound() throws Exception {
+
+        Long id = 2L;
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo");
+
+        when(brandService.update(id, request))
+                .thenThrow(new BrandNotFoundException("Brand not found"));
+
+        mockMvc.perform(put("/brands/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
+                .andExpect(status().isNotFound());
+
+        verify(brandService).update(id, request);
+    }
+
+    @Test
+    void updateStatus_ShouldReturnNoContent_WhenRequestIsValid() throws Exception {
+
+        Long id = 1L;
+        boolean active = true;
+
+        mockMvc.perform(patch("/brands/{id}/status", id)
+                .param("active", "true"))
+
+                .andExpect(status().isNoContent());
+
+        verify(brandService).updateStatus(id, active);
+    }
+
+    @Test
+    void updateStatus_ShouldReturnNoContent_WhenDeactivatingBrand() throws Exception {
+
+        Long id = 1L;
+        boolean active = false;
+
+        mockMvc.perform(patch("/brands/{id}/status", id)
+                        .param("active", "false"))
+
+                .andExpect(status().isNoContent());
+
+        verify(brandService).updateStatus(id, active);
+    }
+
+    @Test
+    void updateStatus_ShouldReturnNoContent_WhenBrandIsNotFound() throws Exception {
+
+        Long id = 2L;
+        boolean active = true;
+
+        doThrow(new BrandNotFoundException("Brand not found"))
+                .when(brandService)
+                .updateStatus(id, active);
+
+        mockMvc.perform(patch("/brands/{id}/status", id)
+                        .param("active", "true")
+                        .accept(MediaType.APPLICATION_JSON))
+
+                .andExpect(status().isNotFound());
+
+        verify(brandService).updateStatus(id, active);
     }
 }
 
