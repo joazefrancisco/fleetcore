@@ -5,6 +5,8 @@ import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
+import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
+import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import br.com.fleetcore.domain.vehicle.service.BrandService;
 import org.springframework.data.domain.Page;
@@ -260,6 +262,42 @@ public class BrandControllerTest {
                 .content(objectMapper.writeValueAsString(request))
         )
                 .andExpect(status().isNotFound());
+
+        verify(brandService).update(id, request);
+    }
+
+    @Test
+    void update_ShouldReturnBrandInactive_WhenBrandIsInactive() throws  Exception {
+
+        Long id = 1L;
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo");
+
+        when(brandService.update(id, request))
+                .thenThrow(new BrandInactiveException("Brand inactive"));
+
+        mockMvc.perform(put("/brands/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+        )
+                .andExpect(status().isConflict());
+
+        verify(brandService).update(id, request);
+    }
+
+    @Test
+    void update_ShouldReturnConflict_WhenBrandAlreadyExists() throws  Exception {
+
+        Long id = 1L;
+        UpdateBrandRequest request = new UpdateBrandRequest("Volvo");
+
+        when(brandService.update(id, request))
+                .thenThrow(new BrandAlreadyExistsException("Brand already exists"));
+
+        mockMvc.perform(put("/brands/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isConflict());
 
         verify(brandService).update(id, request);
     }
