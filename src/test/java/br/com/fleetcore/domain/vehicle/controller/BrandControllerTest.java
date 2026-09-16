@@ -76,7 +76,11 @@ public class BrandControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.path").value("/brands"));
 
         verify(brandService, never()).create(request);
     }
@@ -156,7 +160,6 @@ public class BrandControllerTest {
         verify(brandService).findAll(active, pageable);
     }
 
-
     @Test
     void findById_ShouldReturnOk_WhenRequestIsValid() throws Exception {
 
@@ -198,7 +201,11 @@ public class BrandControllerTest {
                 .accept(MediaType.APPLICATION_JSON)
 
         )
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("BRAND_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Brand not found"))
+                .andExpect(jsonPath("$.path").value("/brands/2"));
 
         verify(brandService).findById(id);
     }
@@ -243,7 +250,11 @@ public class BrandControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.path").value("/brands/1"));
 
         verify(brandService, never()).update(id, request);
     }
@@ -261,7 +272,11 @@ public class BrandControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("BRAND_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Brand not found"))
+                .andExpect(jsonPath("$.path").value("/brands/2"));
 
         verify(brandService).update(id, request);
     }
@@ -279,7 +294,11 @@ public class BrandControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
         )
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("BRAND_INACTIVE"))
+                .andExpect(jsonPath("$.message").value("Brand inactive"))
+                .andExpect(jsonPath("$.path").value("/brands/1"));
 
         verify(brandService).update(id, request);
     }
@@ -295,9 +314,13 @@ public class BrandControllerTest {
 
         mockMvc.perform(put("/brands/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                .andExpect(status().isConflict());
+                        .content(objectMapper.writeValueAsString(request)))
+
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("BRAND_ALREADY_EXISTS"))
+                .andExpect(jsonPath("$.message").value("Brand already exists"))
+                .andExpect(jsonPath("$.path").value("/brands/1"));
 
         verify(brandService).update(id, request);
     }
@@ -344,9 +367,32 @@ public class BrandControllerTest {
                         .param("active", "true")
                         .accept(MediaType.APPLICATION_JSON))
 
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("BRAND_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Brand not found"))
+                .andExpect(jsonPath("$.path").value("/brands/2/status"));
 
         verify(brandService).updateStatus(id, active);
+    }
+
+    @Test
+    void updateStatus_ShouldReturnBadRequest_WhenActiveIsInvalid() throws Exception {
+
+        Long id = 1L;
+        String active = "abc";
+
+        mockMvc.perform(patch("/brands/{id}/status", id)
+                        .param("active", active)
+                        .accept(MediaType.APPLICATION_JSON))
+
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Invalid parameter value"))
+                .andExpect(jsonPath("$.path").value("/brands/1/status"));
+
+        verify(brandService, never()).updateStatus(anyLong(), anyBoolean());
     }
 }
 
