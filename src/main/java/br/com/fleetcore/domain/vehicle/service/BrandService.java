@@ -81,6 +81,8 @@ public class BrandService {
 
         brand.setName(request.name());
 
+        // saveAndFlush is necessary for @PreUpdate to populate updatedAt
+        // before mapping to the response DTO
         Brand savedBrand = brandRepository.saveAndFlush(brand);
 
         return brandMapper.toDetails(savedBrand);
