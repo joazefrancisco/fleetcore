@@ -57,6 +57,7 @@ public class BrandControllerTest {
         mockMvc.perform(post("/brands")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
+                .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
@@ -75,6 +76,7 @@ public class BrandControllerTest {
         mockMvc.perform(post("/brands")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
+                .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -229,6 +231,7 @@ public class BrandControllerTest {
         mockMvc.perform(put("/brands/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
@@ -247,8 +250,9 @@ public class BrandControllerTest {
         UpdateBrandRequest request = new UpdateBrandRequest("");
 
         mockMvc.perform(put("/brands/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
@@ -271,6 +275,7 @@ public class BrandControllerTest {
         mockMvc.perform(put("/brands/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
+                .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -293,6 +298,7 @@ public class BrandControllerTest {
         mockMvc.perform(put("/brands/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
@@ -314,7 +320,8 @@ public class BrandControllerTest {
 
         mockMvc.perform(put("/brands/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
 
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
@@ -332,7 +339,7 @@ public class BrandControllerTest {
         boolean active = true;
 
         mockMvc.perform(patch("/brands/{id}/status", id)
-                .param("active", "true"))
+                    .param("active", "true"))
 
                 .andExpect(status().isNoContent());
 
@@ -354,7 +361,7 @@ public class BrandControllerTest {
     }
 
     @Test
-    void updateStatus_ShouldReturnNoContent_WhenBrandIsNotFound() throws Exception {
+    void updateStatus_ShouldReturnNotFound_WhenBrandIsNotFound() throws Exception {
 
         Long id = 2L;
         boolean active = true;
