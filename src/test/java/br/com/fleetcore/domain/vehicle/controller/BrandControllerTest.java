@@ -401,5 +401,25 @@ public class BrandControllerTest {
 
         verify(brandService, never()).updateStatus(anyLong(), anyBoolean());
     }
+
+    @Test
+    void handleGenericException_ShouldReturnServerError_WhenUnexpectedExceptionOccurs() throws Exception {
+
+        Long id = 1L;
+
+        when(brandService.findById(id))
+                .thenThrow(new NullPointerException());
+
+        mockMvc.perform(get("/brands/{id}", id)
+                        .accept(MediaType.APPLICATION_JSON))
+
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.error").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
+                .andExpect(jsonPath("$.path").value("/brands/1"));
+
+        verify(brandService).findById(id);
+    }
 }
 
