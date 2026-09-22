@@ -6,6 +6,7 @@ import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.enums.BrandStatusFilter;
 import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
@@ -41,15 +42,17 @@ public class BrandService {
     }
 
     @Transactional(readOnly = true)
-    public Page<BrandSummary> findAll(Boolean active, Pageable pageable) {
+    public Page<BrandSummary> findAll(BrandStatusFilter status, Pageable pageable) {
 
-        Page<Brand> brands;
+        BrandStatusFilter filter = status == null
+                ? BrandStatusFilter.ACTIVE
+                : status;
 
-        if (active == null) {
-            brands = brandRepository.findAll(pageable);
-        } else {
-            brands = brandRepository.findAllByActive(active, pageable);
-        }
+        Page<Brand> brands = switch (filter){
+            case ACTIVE -> brandRepository.findAllByActive(true, pageable);
+            case INACTIVE -> brandRepository.findAllByActive(false, pageable);
+            case ALL -> brandRepository.findAll(pageable);
+        };
 
         return brands.map(brandMapper::toSummary);
     }

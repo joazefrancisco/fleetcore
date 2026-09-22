@@ -5,6 +5,7 @@ import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
+import br.com.fleetcore.domain.vehicle.enums.BrandStatusFilter;
 import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
@@ -88,34 +89,9 @@ public class BrandControllerTest {
     }
 
     @Test
-    void findAll_ShouldReturnOk_WhenRequestIsValid() throws Exception {
+    void findAll_ShouldReturnActiveBrandsByDefault_WhenStatusIsNotProvided() throws Exception {
 
-        Boolean active = null;
-
-        Pageable pageable = PageRequest.of(0, 10);
-
-        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
-
-        Page<BrandSummary> brandSummaryPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
-
-        when(brandService.findAll(eq(active), any(Pageable.class)))
-                .thenReturn(brandSummaryPage);
-
-        mockMvc.perform(get("/brands")
-                        .param("size", "10")
-                        .accept(MediaType.APPLICATION_JSON)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(1L))
-                .andExpect(jsonPath("$.content[0].name").value("Volvo"));
-
-        verify(brandService).findAll(active, pageable);
-    }
-
-    @Test
-    void findAll_ShouldReturnActiveBrands_WhenActiveIsTrue() throws Exception {
-
-        boolean active = true;
+        BrandStatusFilter status = null;
 
         BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
 
@@ -123,24 +99,49 @@ public class BrandControllerTest {
 
         Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
 
-        when(brandService.findAll(active, pageable))
+        when(brandService.findAll(status, pageable))
                 .thenReturn(brandPage);
 
         mockMvc.perform(get("/brands")
-                                .param("active", "true")
+                        .param("size", "20")
+                        .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1L))
+                .andExpect(jsonPath("$.content[0].name").value("Volvo"));
+
+        verify(brandService).findAll(status, pageable);
+    }
+
+    @Test
+    void findAll_ShouldReturnActiveBrands_WhenStatusIsActive() throws Exception {
+
+        BrandStatusFilter status = BrandStatusFilter.ACTIVE;
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
+
+        when(brandService.findAll(status, pageable))
+                .thenReturn(brandPage);
+
+        mockMvc.perform(get("/brands")
+                                .param("status", "ACTIVE")
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1L))
                 .andExpect(jsonPath("$.content[0].name").value("Volvo"));
 
-        verify(brandService).findAll(active, pageable);
+        verify(brandService).findAll(status, pageable);
     }
 
     @Test
-    void findAll_ShouldReturnInactiveBrands_WhenActiveIsFalse() throws Exception {
+    void findAll_ShouldReturnInactiveBrands_WhenStatusIsInactive() throws Exception {
 
-        boolean active = false;
+        BrandStatusFilter status = BrandStatusFilter.INACTIVE;
 
         BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
 
@@ -148,18 +149,45 @@ public class BrandControllerTest {
 
         Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
 
-        when(brandService.findAll(active, pageable))
+        when(brandService.findAll(status, pageable))
                 .thenReturn(brandPage);
 
         mockMvc.perform(get("/brands")
-                        .param("active", "false")
+                        .param("status", "INACTIVE")
                         .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1L))
                 .andExpect(jsonPath("$.content[0].name").value("Volvo"));
 
-        verify(brandService).findAll(active, pageable);
+        verify(brandService).findAll(status, pageable);
+    }
+
+    @Test
+    void findAll_ShouldReturnAllBrands_WhenStatusIsAll() throws Exception {
+
+        BrandStatusFilter status = BrandStatusFilter.ALL;
+
+        BrandSummary volvo = new BrandSummary(1L, "Volvo");
+        BrandSummary scania = new BrandSummary(2L, "Scania");
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<BrandSummary> brandPage =
+                new PageImpl<>(List.of(volvo, scania), pageable, 2);
+
+        when(brandService.findAll(status, pageable))
+                .thenReturn(brandPage);
+
+        mockMvc.perform(get("/brands")
+                        .param("status", "ALL")
+                        .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Volvo"))
+                .andExpect(jsonPath("$.content[1].name").value("Scania"));
+
+        verify(brandService).findAll(status, pageable);
     }
 
     @Test

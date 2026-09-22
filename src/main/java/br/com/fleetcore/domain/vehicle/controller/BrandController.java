@@ -5,6 +5,7 @@ import br.com.fleetcore.domain.vehicle.dto.BrandResponse;
 import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
+import br.com.fleetcore.domain.vehicle.enums.BrandStatusFilter;
 import br.com.fleetcore.domain.vehicle.service.BrandService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +31,10 @@ public class BrandController {
 
     @GetMapping
     public ResponseEntity<Page<BrandSummary>> findAll(
-            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) BrandStatusFilter status,
             Pageable pageable) {
 
-        return ResponseEntity.ok(brandService.findAll(active, pageable));
+        return ResponseEntity.ok(brandService.findAll(status, pageable));
     }
 
     @GetMapping("/{id}")

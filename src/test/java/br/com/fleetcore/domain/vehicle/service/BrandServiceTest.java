@@ -2,6 +2,7 @@ package br.com.fleetcore.domain.vehicle.service;
 
 import br.com.fleetcore.domain.vehicle.dto.*;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.enums.BrandStatusFilter;
 import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
@@ -194,9 +195,103 @@ public class BrandServiceTest {
     }
 
     @Test
-    void findAll_ShouldReturnBrands_WhenActiveIsNull(){
+    void findAll_ShouldReturnActiveBrandsByDefault_WhenStatusIsNull(){
+        BrandStatusFilter status = null;
 
-        Boolean active = null;
+        boolean active = true;
+
+        Brand brand = this.createBrand(1L, "Volvo", active);
+
+        Pageable pageable = PageRequest.of(0, 1);
+
+        Page<Brand> brandPage = new PageImpl<>(List.of(brand), pageable, 1);
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        when(brandRepository.findAllByActive(active, pageable))
+                .thenReturn(brandPage);
+
+        when(brandMapper.toSummary(brand))
+                .thenReturn(brandSummary);
+
+        Page<BrandSummary> result = brandService.findAll(status, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(brand.getId(), result.getContent().getFirst().id());
+        assertEquals("Volvo", result.getContent().getFirst().name());
+
+        verify(brandRepository).findAllByActive(active, pageable);
+        verify(brandMapper).toSummary(brand);
+    }
+
+    @Test
+    void findAll_ShouldReturnActiveBrands_WhenStatusIsActive(){
+
+        BrandStatusFilter status = BrandStatusFilter.ACTIVE;
+
+        boolean active = true;
+
+        Brand brand = this.createBrand(1L, "Volvo", active);
+
+        Pageable pageable = PageRequest.of(0, 1);
+
+        Page<Brand> brandPage = new PageImpl<>(List.of(brand), pageable, 1);
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        when(brandRepository.findAllByActive(active, pageable))
+                .thenReturn(brandPage);
+
+        when(brandMapper.toSummary(brand))
+                .thenReturn(brandSummary);
+
+        Page<BrandSummary> result = brandService.findAll(status, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(brand.getId(), result.getContent().getFirst().id());
+        assertEquals("Volvo", result.getContent().getFirst().name());
+
+        verify(brandRepository).findAllByActive(active, pageable);
+        verify(brandMapper).toSummary(brand);
+    }
+
+    @Test
+    void findAll_ShouldReturnInactiveBrands_WhenStatusIsInactive(){
+        BrandStatusFilter status = BrandStatusFilter.INACTIVE;
+
+        boolean active = false;
+
+        Brand brand = this.createBrand(1L, "Volvo", active);
+
+        Pageable pageable = PageRequest.of(0, 1);
+
+        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
+
+        Page<Brand> brandPage = new PageImpl<>(List.of(brand), pageable, 1);
+
+        when(brandRepository.findAllByActive(active, pageable))
+                .thenReturn(brandPage);
+
+        when(brandMapper.toSummary(brand))
+                .thenReturn(brandSummary);
+
+        Page<BrandSummary> result = brandService.findAll(status, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(brand.getId(), result.getContent().getFirst().id());
+        assertEquals("Volvo", result.getContent().getFirst().name());
+
+        verify(brandRepository).findAllByActive(active, pageable);
+        verify(brandMapper).toSummary(brand);
+    }
+
+    @Test
+    void findAll_ShouldReturnBrands_WhenStatusIsAll(){
+
+        BrandStatusFilter status = BrandStatusFilter.ALL;
 
         Pageable pageable = PageRequest.of(0, 10);
 
@@ -220,7 +315,7 @@ public class BrandServiceTest {
                 .thenReturn(scaniaSummary);
 
 
-        Page<BrandSummary> result = brandService.findAll(active,  pageable);
+        Page<BrandSummary> result = brandService.findAll(status,  pageable);
 
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
@@ -230,64 +325,6 @@ public class BrandServiceTest {
         verify(brandRepository).findAll(pageable);
         verify(brandMapper).toSummary(volvo);
         verify(brandMapper).toSummary(scania);
-    }
-
-    @Test
-    void findAll_ShouldReturnActiveBrands_WhenActiveIsTrue(){
-        boolean active = true;
-
-        Brand brand = this.createBrand(1L, "Volvo", active);
-
-        Pageable pageable = PageRequest.of(0, 1);
-
-        Page<Brand> brandPage = new PageImpl<>(List.of(brand), pageable, 1);
-
-        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
-
-        when(brandRepository.findAllByActive(active, pageable))
-                .thenReturn(brandPage);
-
-        when(brandMapper.toSummary(brand))
-                .thenReturn(brandSummary);
-
-        Page<BrandSummary> result = brandService.findAll(active, pageable);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals(brand.getId(), result.getContent().getFirst().id());
-        assertEquals("Volvo", result.getContent().getFirst().name());
-
-        verify(brandRepository).findAllByActive(active, pageable);
-        verify(brandMapper).toSummary(brand);
-    }
-
-    @Test
-    void findAll_ShouldReturnInactiveBrands_WhenActiveIsFalse(){
-        boolean active = false;
-
-        Brand brand = this.createBrand(1L, "Volvo", active);
-
-        Pageable pageable = PageRequest.of(0, 1);
-
-        BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
-
-        Page<Brand> brandPage = new PageImpl<>(List.of(brand), pageable, 1);
-
-        when(brandRepository.findAllByActive(active, pageable))
-                .thenReturn(brandPage);
-
-        when(brandMapper.toSummary(brand))
-                .thenReturn(brandSummary);
-
-        Page<BrandSummary> result = brandService.findAll(active, pageable);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals(brand.getId(), result.getContent().getFirst().id());
-        assertEquals("Volvo", result.getContent().getFirst().name());
-
-        verify(brandRepository).findAllByActive(active, pageable);
-        verify(brandMapper).toSummary(brand);
     }
 
     @Test
