@@ -191,6 +191,21 @@ public class BrandControllerTest {
     }
 
     @Test
+    void findAll_ShouldReturnBadRequest_WhenStatusIsInvalid() throws Exception {
+
+        mockMvc.perform(get("/brands")
+                        .param("status", "INVALID")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Invalid parameter value"))
+                .andExpect(jsonPath("$.path").value("/brands"));
+
+        verify(brandService, never()).findAll(any(), any());
+    }
+
+    @Test
     void findById_ShouldReturnOk_WhenRequestIsValid() throws Exception {
 
         Long id = 1L;
