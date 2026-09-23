@@ -37,6 +37,10 @@ public class Brand {
     @OneToMany(mappedBy = "brand")
     private List<Model> models = new ArrayList<>();
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
