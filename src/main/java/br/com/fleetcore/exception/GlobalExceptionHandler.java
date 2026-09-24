@@ -4,8 +4,10 @@ import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -108,6 +110,35 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 null
         );
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleObjectOptimisticLockingFailureException(
+            ObjectOptimisticLockingFailureException exception,
+            HttpServletRequest request
+    ){
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "CONCURRENT_UPDATE",
+                "This record has been updated by another user. Please reload the data and try again",
+                request.getRequestURI(),
+                null
+                );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request
+    ){
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "CONCURRENT_CREATE",
+                "The record could not be created because a unique resource constraint was violated." +
+                        " It may have been registered by another concurrent request",
+                request.getRequestURI(),
+                null
+                );
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(
