@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -130,15 +131,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
             DataIntegrityViolationException exception,
             HttpServletRequest request
-    ){
+    ) {
+        if (isBrandNameUniquenessViolation(exception)) {
+            return buildResponse(
+                    HttpStatus.CONFLICT,
+                    "BRAND_ALREADY_EXISTS",
+                    "Brand already exists",
+                    request.getRequestURI(),
+                    null
+            );
+        }
+
         return buildResponse(
                 HttpStatus.CONFLICT,
-                "CONCURRENT_CREATE",
-                "The record could not be created because a unique resource constraint was violated." +
-                        " It may have been registered by another concurrent request",
+                "DATA_INTEGRITY_VIOLATION",
+                "The request could not be completed due to a data integrity constraint violation",
                 request.getRequestURI(),
                 null
-                );
+        );
+    }
+
+    private boolean isBrandNameUniquenessViolation(DataIntegrityViolationException exception) {
+        return exception.getCause() instanceof ConstraintViolationException cve
+                && "uk_brand_name_lower".equals(cve.getConstraintName());
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(
