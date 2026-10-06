@@ -144,7 +144,6 @@ public class BrandServiceTest {
 
         assertEquals(active, brand.isActive());
         verify(brandRepository).findById(brandId);
-        verify(brandRepository).save(brand);
     }
 
     @Test
@@ -328,7 +327,7 @@ public class BrandServiceTest {
     }
 
     @Test
-    void create_ShouldThrowException_WhenBrandAlready(){
+    void create_ShouldThrowException_WhenBrandAlreadyExists(){
 
         String brand = "Volvo";
 

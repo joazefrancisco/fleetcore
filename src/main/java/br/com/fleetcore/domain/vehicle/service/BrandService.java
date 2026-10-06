@@ -27,7 +27,7 @@ public class BrandService {
 
     private final BrandMapper brandMapper;
 
-    @Transactional()
+    @Transactional
     public BrandResponse create(CreateBrandRequest request) {
 
         if (brandRepository.existsByNameIgnoreCase(request.name())) {
@@ -101,7 +101,6 @@ public class BrandService {
         }
 
         brand.setActive(active);
-        brandRepository.save(brand);
     }
 
     protected Brand findByIdOrThrow(Long id){
