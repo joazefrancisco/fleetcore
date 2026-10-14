@@ -54,7 +54,9 @@ public class BrandController {
                     content = @Content(schema = @Schema(implementation = Page.class)))
     })
     public ResponseEntity<Page<BrandSummary>> findAll(
-            @Parameter(description = "Status filter (ACTIVE, INACTIVE, ALL). If not provided, returns all brands.")
+            @Parameter(description = "Status filter: ACTIVE, INACTIVE, or ALL. Defaults to ACTIVE when not provided.",
+                    example = "ACTIVE"
+            )
             @RequestParam(required = false) BrandStatusFilter status,
             Pageable pageable) {
 
@@ -62,7 +64,8 @@ public class BrandController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get brand by ID", description = "Returns complete details of a specific brand")
+    @Operation(summary = "Get brand by QW" +
+            "ID", description = "Returns complete details of a specific brand")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Brand found",
                     content = @Content(schema = @Schema(implementation = BrandDetails.class))),
