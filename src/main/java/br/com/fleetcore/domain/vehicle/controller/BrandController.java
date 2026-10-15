@@ -64,8 +64,7 @@ public class BrandController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get brand by QW" +
-            "ID", description = "Returns complete details of a specific brand")
+    @Operation(summary = "Get brand by ID", description = "Returns complete details of a specific brand")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Brand found",
                     content = @Content(schema = @Schema(implementation = BrandDetails.class))),
