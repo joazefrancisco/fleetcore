@@ -6,6 +6,11 @@ import br.com.fleetcore.domain.vehicle.dto.BrandSummary;
 import br.com.fleetcore.domain.vehicle.dto.CreateBrandRequest;
 import br.com.fleetcore.domain.vehicle.dto.UpdateBrandRequest;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
+import br.com.fleetcore.domain.vehicle.enums.BrandStatusFilter;
+import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
+import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
+import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
+import br.com.fleetcore.domain.vehicle.mapper.BrandMapper;
 import br.com.fleetcore.domain.vehicle.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,43 +25,36 @@ public class BrandService {
 
     private final BrandRepository brandRepository;
 
-    @Transactional()
+    private final BrandMapper brandMapper;
+
+    @Transactional
     public BrandResponse create(CreateBrandRequest request) {
 
         if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new IllegalArgumentException("Brand already exists");
+            throw new BrandAlreadyExistsException("Brand already exists");
         }
 
-        Brand brand = Brand.builder()
-                .name(request.name())
-                .build();
+        Brand brand = brandMapper.toEntity(request);
 
         Brand savedBrand = brandRepository.save(brand);
 
-        return new BrandResponse(
-                savedBrand.getId(),
-                savedBrand.getName(),
-                savedBrand.isActive()
-        );
+        return brandMapper.toResponse(savedBrand);
     }
 
     @Transactional(readOnly = true)
-    public Page<BrandSummary> findAll(Boolean active, Pageable pageable) {
+    public Page<BrandSummary> findAll(BrandStatusFilter status, Pageable pageable) {
 
-        Page<Brand> brands;
+        BrandStatusFilter filter = status == null
+                ? BrandStatusFilter.ACTIVE
+                : status;
 
-        if (active == null) {
-            brands = brandRepository.findAll(pageable);
-        } else {
-            brands = brandRepository.findAllByActive(active, pageable);
-        }
+        Page<Brand> brands = switch (filter){
+            case ACTIVE -> brandRepository.findAllByActive(true, pageable);
+            case INACTIVE -> brandRepository.findAllByActive(false, pageable);
+            case ALL -> brandRepository.findAll(pageable);
+        };
 
-        return brands.map(brand ->
-                new BrandSummary(
-                        brand.getId(),
-                        brand.getName()
-                )
-        );
+        return brands.map(brandMapper::toSummary);
     }
 
     @Transactional(readOnly = true)
@@ -64,35 +62,33 @@ public class BrandService {
 
         Brand brand = this.findByIdOrThrow(id);
 
-        return new BrandDetails(
-                brand.getId(),
-                brand.getName(),
-                brand.isActive(),
-                brand.getCreatedAt(),
-                brand.getUpdatedAt()
-        );
+        return brandMapper.toDetails(brand);
     }
 
     @Transactional
     public BrandDetails update(Long id, UpdateBrandRequest request) {
 
-        if (brandRepository.existsByNameIgnoreCase(request.name())) {
-            throw new IllegalArgumentException("Brand already exists");
+        Brand brand = this.findByIdOrThrow(id);
+
+        if (!brand.isActive()) {
+            throw new BrandInactiveException("Brand inactive");
         }
 
-        Brand brand = this.findByIdOrThrow(id);
+        if (brand.getName().equals(request.name())) {
+            return brandMapper.toDetails(brand);
+        }
+
+        if (brandRepository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
+            throw new BrandAlreadyExistsException("Brand already exists");
+        }
 
         brand.setName(request.name());
 
-        Brand updatedBrand = brandRepository.save(brand);
+        // saveAndFlush is necessary for @PreUpdate to populate updatedAt
+        // before mapping to the response DTO
+        Brand savedBrand = brandRepository.saveAndFlush(brand);
 
-        return new BrandDetails(
-                updatedBrand.getId(),
-                updatedBrand.getName(),
-                updatedBrand.isActive(),
-                updatedBrand.getCreatedAt(),
-                updatedBrand.getUpdatedAt()
-        );
+        return brandMapper.toDetails(savedBrand);
     }
 
     @Transactional
@@ -100,15 +96,17 @@ public class BrandService {
 
         Brand brand = this.findByIdOrThrow(id);
 
-        brand.setActive(active);
+        if (brand.isActive() == active){
+            return;
+        }
 
-        brandRepository.save(brand);
+        brand.setActive(active);
     }
 
     protected Brand findByIdOrThrow(Long id){
         return brandRepository.findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Brand not found")
+                        new BrandNotFoundException("Brand not found")
                 );
     }
 }

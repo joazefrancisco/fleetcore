@@ -20,7 +20,7 @@ public class Brand {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Builder.Default
@@ -36,6 +36,10 @@ public class Brand {
     @Builder.Default
     @OneToMany(mappedBy = "brand")
     private List<Model> models = new ArrayList<>();
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @PrePersist
     protected void onCreate() {
