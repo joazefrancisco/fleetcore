@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -48,17 +49,23 @@ public class BrandController {
     }
 
     @GetMapping
-    @Operation(summary = "List brands", description = "Lists all brands with pagination and status filter support")
+    @Operation(summary = "List brands", description = """
+            Returns a paginated list of vehicle brands.
+            The status filter accepts ACTIVE, INACTIVE, or ALL.
+            When omitted, the service defaults to ACTIVE.
+            Pagination supports page, size, and sort parameters.
+            """)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Brand list returned successfully",
-                    content = @Content(schema = @Schema(implementation = Page.class)))
+            @ApiResponse(responseCode = "200", description = "Brand list returned successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid status filter",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<Page<BrandSummary>> findAll(
             @Parameter(description = "Status filter: ACTIVE, INACTIVE, or ALL. Defaults to ACTIVE when not provided.",
                     example = "ACTIVE"
             )
             @RequestParam(required = false) BrandStatusFilter status,
-            Pageable pageable) {
+            @ParameterObject Pageable pageable) {
 
         return ResponseEntity.ok(brandService.findAll(status, pageable));
     }
@@ -102,6 +109,8 @@ public class BrandController {
     @Operation(summary = "Update brand status", description = "Activates or deactivates an existing brand")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Status updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameter value",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Brand not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Conflict: concurrent update",
