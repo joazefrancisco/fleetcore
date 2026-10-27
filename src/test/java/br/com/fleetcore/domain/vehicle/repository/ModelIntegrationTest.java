@@ -1,12 +1,7 @@
 package br.com.fleetcore.domain.vehicle.repository;
 
-import br.com.fleetcore.domain.owner.entity.Owner;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
 import br.com.fleetcore.domain.vehicle.entity.Model;
-import br.com.fleetcore.domain.vehicle.entity.Vehicle;
-import br.com.fleetcore.domain.vehicle.enums.VehicleFuelType;
-import br.com.fleetcore.domain.vehicle.enums.VehicleStatus;
-import br.com.fleetcore.domain.vehicle.enums.VehicleType;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -131,9 +125,9 @@ public class ModelIntegrationTest {
     }
 
     @Test
-    void shouldAllowSameNameInDifferentBrands_WhenOldConstraintWasRemoved() {
-        // This test verifies that the old constraint uk_model_brand_name was removed
-        // With the new global uniqueness, this should FAIL
+    void shouldRejectSameModelNameAcrossDifferentBrands() {
+        // This test verifies that global model-name uniqueness rejects
+        // duplicate model names across different brands.
         Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
         Brand scania = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
 
@@ -177,6 +171,7 @@ public class ModelIntegrationTest {
             Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
             return brand.getId();
         });
+        assertNotNull(brandId, "brandId should not be null");
 
         Long firstModelId = transactionTemplate.execute(status -> {
             Model savedModel = modelRepository.saveAndFlush(
@@ -191,6 +186,8 @@ public class ModelIntegrationTest {
 
             return savedModel.getId();
         });
+
+        assertNotNull(firstModelId);
 
         try {
             Model userA = transactionTemplate.execute(status ->
@@ -211,6 +208,7 @@ public class ModelIntegrationTest {
                 return modelRepository.saveAndFlush(userA);
             });
 
+            assertNotNull(updatedUserA);
             assertEquals(1L, updatedUserA.getVersion());
 
             userB.setName("FH 543");
@@ -235,11 +233,13 @@ public class ModelIntegrationTest {
             Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
             return brand.getId();
         });
+        assertNotNull(volvoId, "volvoId should not be null");
 
         Long scaniaId = transactionTemplate.execute(status -> {
             Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
             return brand.getId();
         });
+        assertNotNull(scaniaId, "scaniaId should not be null");
 
         Long firstModelId = transactionTemplate.execute(status -> {
             Model model = Model.builder()
@@ -278,7 +278,11 @@ public class ModelIntegrationTest {
     }
 
     @Test
-    void shouldPreserveHistoricalLinks_WhenModelIsDeactivated() {
+    void shouldPersistAndDeactivateModel_WhenBrandExists() {
+        // Note: This test validates Model persistence and deactivation.
+        // Validation of historical links with Vehicle is pending due to missing
+        // OwnerRepository and VehicleConfiguration in the test infrastructure.
+
         Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
 
         Model model = Model.builder()
@@ -286,33 +290,6 @@ public class ModelIntegrationTest {
                 .brand(brand)
                 .build();
         Model savedModel = modelRepository.saveAndFlush(model);
-
-        Owner owner = Owner.builder()
-                .name("John Doe")
-                .document("12345678900")
-                .build();
-
-        // Error! So, we don't need to save the owner
-        // Owner savedOwner = brandRepository.saveAndFlush(owner);
-
-        Vehicle vehicle = Vehicle.builder()
-                .preRegistrationCode("ABC1234567")
-                .chassis("9BWZZZ12345678901")
-                .renavam("12345678901")
-                .brand(brand)
-                .model(model)
-                .vehicleType(VehicleType.TRUCK)
-                .fuelType(VehicleFuelType.DIESEL)
-                .manufactureYear(2024)
-                .modelYear(2024)
-                .mileage(0L)
-                .status(VehicleStatus.PRE_REGISTERED)
-                .owner(owner)
-                .build();
-
-        // Note: Vehicle requires VehicleConfiguration, but we're testing Model inactivation
-        // For this test, we'll verify the Model can be inactivated without breaking FKs
-        // In a real scenario, Vehicle would need a VehicleConfiguration
 
         // Deactivate the model
         savedModel.setActive(false);
@@ -322,8 +299,7 @@ public class ModelIntegrationTest {
         Model inactiveModel = modelRepository.findById(savedModel.getId()).orElseThrow();
         assertFalse(inactiveModel.isActive());
 
-        // Verify the model still exists and links are intact
-        assertNotNull(inactiveModel);
+        // Verify the model still exists and maintains a link to brand
         assertEquals(brand.getId(), inactiveModel.getBrand().getId());
     }
 
@@ -385,12 +361,7 @@ public class ModelIntegrationTest {
         LocalDateTime originalCreatedAt = savedModel.getCreatedAt();
         LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt();
 
-        // Simulate idempotent operation: checking if name is same before update
-        String currentName = savedModel.getName();
-        if (currentName.equals("FH 540")) {
-            // No change, no save
-        }
-
+        // Simulate idempotent operation: no change, no save
         // Reload from database to verify no change
         Model reloadedModel = modelRepository.findById(savedModel.getId()).orElseThrow();
 
