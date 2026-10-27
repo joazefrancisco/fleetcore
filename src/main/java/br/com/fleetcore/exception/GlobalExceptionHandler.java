@@ -3,6 +3,9 @@ package br.com.fleetcore.exception;
 import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
+import br.com.fleetcore.domain.vehicle.exception.ModelAlreadyExistsException;
+import br.com.fleetcore.domain.vehicle.exception.ModelInactiveException;
+import br.com.fleetcore.domain.vehicle.exception.ModelNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -56,6 +59,48 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.CONFLICT,
                 "BRAND_INACTIVE",
+                exception.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+    }
+
+    @ExceptionHandler(ModelNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleModelNotFound(
+            ModelNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                "MODEL_NOT_FOUND",
+                exception.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+    }
+
+    @ExceptionHandler(ModelAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleModelAlreadyExists(
+            ModelAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "MODEL_ALREADY_EXISTS",
+                exception.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+    }
+
+    @ExceptionHandler(ModelInactiveException.class)
+    public ResponseEntity<ErrorResponse> handleModelInactive(
+            ModelInactiveException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "MODEL_INACTIVE",
                 exception.getMessage(),
                 request.getRequestURI(),
                 null
@@ -142,6 +187,16 @@ public class GlobalExceptionHandler {
             );
         }
 
+        if (isModelNameUniquenessViolation(exception)) {
+            return buildResponse(
+                    HttpStatus.CONFLICT,
+                    "MODEL_ALREADY_EXISTS",
+                    "Model already exists",
+                    request.getRequestURI(),
+                    null
+            );
+        }
+
         return buildResponse(
                 HttpStatus.CONFLICT,
                 "DATA_INTEGRITY_VIOLATION",
@@ -154,6 +209,11 @@ public class GlobalExceptionHandler {
     private boolean isBrandNameUniquenessViolation(DataIntegrityViolationException exception) {
         return exception.getCause() instanceof ConstraintViolationException cve
                 && "uk_brand_name_lower".equals(cve.getConstraintName());
+    }
+
+    private boolean isModelNameUniquenessViolation(DataIntegrityViolationException exception) {
+        return exception.getCause() instanceof ConstraintViolationException cve
+                && "uk_model_name_lower".equals(cve.getConstraintName());
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(
