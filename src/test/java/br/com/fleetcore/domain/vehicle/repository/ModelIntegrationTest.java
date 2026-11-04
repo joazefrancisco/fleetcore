@@ -1,7 +1,11 @@
+
 package br.com.fleetcore.domain.vehicle.repository;
 
+import br.com.fleetcore.domain.vehicle.dto.UpdateModelRequest;
 import br.com.fleetcore.domain.vehicle.entity.Brand;
 import br.com.fleetcore.domain.vehicle.entity.Model;
+import br.com.fleetcore.domain.vehicle.service.ModelService;
+import jakarta.persistence.EntityManager;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
-public class ModelIntegrationTest {
+class ModelIntegrationTest {
 
     @Autowired
     private ModelRepository modelRepository;
@@ -27,7 +31,13 @@ public class ModelIntegrationTest {
     private BrandRepository brandRepository;
 
     @Autowired
+    private ModelService modelService;
+
+    @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void shouldPersistModelInPostgres() {
@@ -51,17 +61,22 @@ public class ModelIntegrationTest {
 
     @Test
     void shouldRejectDuplicateModelNameIgnoreCase_Globally() {
-        Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
-        Brand scania = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
+        Brand volvo = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
+        Brand scania = brandRepository.saveAndFlush(
+                Brand.builder().name("Scania").build()
+        );
 
         Model firstModel = Model.builder()
                 .name("FH 540")
                 .brand(volvo)
                 .build();
+
         modelRepository.saveAndFlush(firstModel);
 
         Model secondModel = Model.builder()
-                .name("fh 540")  // Same name, different brand, different case
+                .name("fh 540")
                 .brand(scania)
                 .build();
 
@@ -70,25 +85,33 @@ public class ModelIntegrationTest {
                 () -> modelRepository.saveAndFlush(secondModel)
         );
 
-        ConstraintViolationException exceptionCause =
-                assertInstanceOf(ConstraintViolationException.class, exception.getCause());
+        ConstraintViolationException cause =
+                assertInstanceOf(
+                        ConstraintViolationException.class,
+                        exception.getCause()
+                );
 
-        assertEquals("uk_model_name_lower", exceptionCause.getConstraintName());
+        assertEquals("uk_model_name_lower", cause.getConstraintName());
     }
 
     @Test
     void shouldRejectDuplicateModelNameWithExternalSpaces_Globally() {
-        Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
-        Brand scania = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
+        Brand volvo = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
+        Brand scania = brandRepository.saveAndFlush(
+                Brand.builder().name("Scania").build()
+        );
 
         Model firstModel = Model.builder()
                 .name("FH 540")
                 .brand(volvo)
                 .build();
+
         modelRepository.saveAndFlush(firstModel);
 
         Model secondModel = Model.builder()
-                .name("  FH 540  ")  // Same name with external spaces
+                .name("  FH 540  ")
                 .brand(scania)
                 .build();
 
@@ -97,20 +120,26 @@ public class ModelIntegrationTest {
                 () -> modelRepository.saveAndFlush(secondModel)
         );
 
-        ConstraintViolationException exceptionCause =
-                assertInstanceOf(ConstraintViolationException.class, exception.getCause());
+        ConstraintViolationException cause =
+                assertInstanceOf(
+                        ConstraintViolationException.class,
+                        exception.getCause()
+                );
 
-        assertEquals("uk_model_name_lower", exceptionCause.getConstraintName());
+        assertEquals("uk_model_name_lower", cause.getConstraintName());
     }
 
     @Test
     void shouldAllowDifferentNamesInSameBrand() {
-        Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+        Brand volvo = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model firstModel = Model.builder()
                 .name("FH 540")
                 .brand(volvo)
                 .build();
+
         modelRepository.saveAndFlush(firstModel);
 
         Model secondModel = Model.builder()
@@ -126,35 +155,47 @@ public class ModelIntegrationTest {
 
     @Test
     void shouldRejectSameModelNameAcrossDifferentBrands() {
-        // This test verifies that global model-name uniqueness rejects
-        // duplicate model names across different brands.
-        Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
-        Brand scania = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
+        Brand volvo = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
+        Brand scania = brandRepository.saveAndFlush(
+                Brand.builder().name("Scania").build()
+        );
 
         Model firstModel = Model.builder()
                 .name("FH 540")
                 .brand(volvo)
                 .build();
+
         modelRepository.saveAndFlush(firstModel);
 
         Model secondModel = Model.builder()
-                .name("FH 540")  // Same name, different brand
+                .name("FH 540")
                 .brand(scania)
                 .build();
 
-        // With global uniqueness, this should fail
-        assertThrows(
+        DataIntegrityViolationException exception = assertThrows(
                 DataIntegrityViolationException.class,
                 () -> modelRepository.saveAndFlush(secondModel)
         );
+
+        ConstraintViolationException cause =
+                assertInstanceOf(
+                        ConstraintViolationException.class,
+                        exception.getCause()
+                );
+
+        assertEquals("uk_model_name_lower", cause.getConstraintName());
     }
 
     @Test
     void shouldPreserveInternalConsecutiveSpaces() {
-        Brand volvo = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+        Brand volvo = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model model = Model.builder()
-                .name("FH  540")  // Two consecutive spaces
+                .name("FH  540")
                 .brand(volvo)
                 .build();
 
@@ -167,34 +208,49 @@ public class ModelIntegrationTest {
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void shouldRejectConcurrentUpdate_whenModelVersionIsOutdated() {
-        Long brandId = transactionTemplate.execute(status -> {
-            Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
-            return brand.getId();
-        });
-        assertNotNull(brandId, "brandId should not be null");
-
-        Long firstModelId = transactionTemplate.execute(status -> {
-            Model savedModel = modelRepository.saveAndFlush(
-                    Model.builder()
-                            .name("FH 540")
-                            .brand(brandRepository.findById(brandId).orElseThrow())
-                            .build()
-            );
-
-            assertNotNull(savedModel);
-            assertNotNull(savedModel.getId());
-
-            return savedModel.getId();
-        });
-
-        assertNotNull(firstModelId);
+        Long brandId = null;
+        Long firstModelId = null;
 
         try {
+            Long createdBrandId = transactionTemplate.execute(status -> {
+                Brand brand = brandRepository.saveAndFlush(
+                        Brand.builder().name("Volvo").build()
+                );
+
+                return brand.getId();
+            });
+
+            assertNotNull(createdBrandId);
+            brandId = createdBrandId;
+
+            final Long savedBrandId = createdBrandId;
+
+            Long createdModelId = transactionTemplate.execute(status -> {
+                Model savedModel = modelRepository.saveAndFlush(
+                        Model.builder()
+                                .name("FH 540")
+                                .brand(
+                                        brandRepository.findById(savedBrandId)
+                                                .orElseThrow()
+                                )
+                                .build()
+                );
+
+                return savedModel.getId();
+            });
+
+            assertNotNull(createdModelId);
+            firstModelId = createdModelId;
+
+            final Long savedModelId = createdModelId;
+
             Model userA = transactionTemplate.execute(status ->
-                    modelRepository.findById(firstModelId).orElseThrow());
+                    modelRepository.findById(savedModelId).orElseThrow()
+            );
 
             Model userB = transactionTemplate.execute(status ->
-                    modelRepository.findById(firstModelId).orElseThrow());
+                    modelRepository.findById(savedModelId).orElseThrow()
+            );
 
             assertNotNull(userA);
             assertNotNull(userB);
@@ -216,96 +272,156 @@ public class ModelIntegrationTest {
             assertThrows(
                     ObjectOptimisticLockingFailureException.class,
                     () -> transactionTemplate.executeWithoutResult(status ->
-                            modelRepository.saveAndFlush(userB))
+                            modelRepository.saveAndFlush(userB)
+                    )
             );
+
         } finally {
-            transactionTemplate.executeWithoutResult(status ->
-                    modelRepository.deleteById(firstModelId));
-            transactionTemplate.executeWithoutResult(status ->
-                    brandRepository.deleteById(brandId));
+            if (firstModelId != null) {
+                Long modelIdToDelete = firstModelId;
+
+                transactionTemplate.executeWithoutResult(status ->
+                        modelRepository.deleteById(modelIdToDelete)
+                );
+            }
+
+            if (brandId != null) {
+                Long brandIdToDelete = brandId;
+
+                transactionTemplate.executeWithoutResult(status ->
+                        brandRepository.deleteById(brandIdToDelete)
+                );
+            }
         }
     }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void shouldRejectConcurrentCreation_whenModelNameAlreadyExistsGlobally() {
-        Long volvoId = transactionTemplate.execute(status -> {
-            Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
-            return brand.getId();
-        });
-        assertNotNull(volvoId, "volvoId should not be null");
-
-        Long scaniaId = transactionTemplate.execute(status -> {
-            Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Scania").build());
-            return brand.getId();
-        });
-        assertNotNull(scaniaId, "scaniaId should not be null");
-
-        Long firstModelId = transactionTemplate.execute(status -> {
-            Model model = Model.builder()
-                    .name("FH 540")
-                    .brand(brandRepository.findById(volvoId).orElseThrow())
-                    .build();
-            return modelRepository.saveAndFlush(model).getId();
-        });
-
-        assertNotNull(firstModelId);
+        Long volvoId = null;
+        Long scaniaId = null;
+        Long firstModelId = null;
 
         try {
+            Long createdVolvoId = transactionTemplate.execute(status -> {
+                Brand brand = brandRepository.saveAndFlush(
+                        Brand.builder().name("Volvo").build()
+                );
+
+                return brand.getId();
+            });
+
+            assertNotNull(createdVolvoId);
+            volvoId = createdVolvoId;
+
+            Long createdScaniaId = transactionTemplate.execute(status -> {
+                Brand brand = brandRepository.saveAndFlush(
+                        Brand.builder().name("Scania").build()
+                );
+
+                return brand.getId();
+            });
+
+            assertNotNull(createdScaniaId);
+            scaniaId = createdScaniaId;
+
+            final Long savedVolvoId = createdVolvoId;
+            final Long savedScaniaId = createdScaniaId;
+
+            Long createdModelId = transactionTemplate.execute(status -> {
+                Model model = Model.builder()
+                        .name("FH 540")
+                        .brand(
+                                brandRepository.findById(savedVolvoId)
+                                        .orElseThrow()
+                        )
+                        .build();
+
+                return modelRepository.saveAndFlush(model).getId();
+            });
+
+            assertNotNull(createdModelId);
+            firstModelId = createdModelId;
+
             Model secondModel = Model.builder()
-                    .name("fh 540")  // Same name, different brand, different case
-                    .brand(brandRepository.findById(scaniaId).orElseThrow())
+                    .name("fh 540")
+                    .brand(
+                            brandRepository.findById(savedScaniaId)
+                                    .orElseThrow()
+                    )
                     .build();
 
             DataIntegrityViolationException exception = assertThrows(
                     DataIntegrityViolationException.class,
                     () -> transactionTemplate.execute(status ->
-                            modelRepository.saveAndFlush(secondModel))
+                            modelRepository.saveAndFlush(secondModel)
+                    )
             );
 
             ConstraintViolationException cause =
-                    assertInstanceOf(ConstraintViolationException.class, exception.getCause());
+                    assertInstanceOf(
+                            ConstraintViolationException.class,
+                            exception.getCause()
+                    );
 
             assertEquals("uk_model_name_lower", cause.getConstraintName());
+
         } finally {
-            transactionTemplate.executeWithoutResult(status ->
-                    modelRepository.deleteById(firstModelId));
-            transactionTemplate.executeWithoutResult(status ->
-                    brandRepository.deleteById(volvoId));
-            transactionTemplate.executeWithoutResult(status ->
-                    brandRepository.deleteById(scaniaId));
+            if (firstModelId != null) {
+                Long modelIdToDelete = firstModelId;
+
+                transactionTemplate.executeWithoutResult(status ->
+                        modelRepository.deleteById(modelIdToDelete)
+                );
+            }
+
+            if (volvoId != null) {
+                Long brandIdToDelete = volvoId;
+
+                transactionTemplate.executeWithoutResult(status ->
+                        brandRepository.deleteById(brandIdToDelete)
+                );
+            }
+
+            if (scaniaId != null) {
+                Long brandIdToDelete = scaniaId;
+
+                transactionTemplate.executeWithoutResult(status ->
+                        brandRepository.deleteById(brandIdToDelete)
+                );
+            }
         }
     }
 
     @Test
     void shouldPersistAndDeactivateModel_WhenBrandExists() {
-        // Note: This test validates Model persistence and deactivation.
-        // Validation of historical links with Vehicle is pending due to missing
-        // OwnerRepository and VehicleConfiguration in the test infrastructure.
-
-        Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+        Brand brand = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model model = Model.builder()
                 .name("FH 540")
                 .brand(brand)
                 .build();
+
         Model savedModel = modelRepository.saveAndFlush(model);
 
-        // Deactivate the model
         savedModel.setActive(false);
         modelRepository.saveAndFlush(savedModel);
 
-        // Verify model is inactive
-        Model inactiveModel = modelRepository.findById(savedModel.getId()).orElseThrow();
-        assertFalse(inactiveModel.isActive());
+        Model inactiveModel = modelRepository.findById(savedModel.getId())
+                .orElseThrow();
 
-        // Verify the model still exists and maintains a link to brand
+        assertNotNull(inactiveModel);
+        assertFalse(inactiveModel.isActive());
         assertEquals(brand.getId(), inactiveModel.getBrand().getId());
     }
 
     @Test
     void shouldPopulateCreatedAtAndUpdatedAt_OnCreation() {
-        Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+        Brand brand = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model model = Model.builder()
                 .name("FH 540")
@@ -316,13 +432,14 @@ public class ModelIntegrationTest {
 
         assertNotNull(savedModel.getCreatedAt());
         assertNotNull(savedModel.getUpdatedAt());
-        assertNotNull(savedModel.getCreatedAt());
         assertEquals(savedModel.getCreatedAt(), savedModel.getUpdatedAt());
     }
 
     @Test
     void shouldUpdateUpdatedAt_OnRealUpdate() {
-        Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+        Brand brand = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model model = Model.builder()
                 .name("FH 540")
@@ -330,17 +447,13 @@ public class ModelIntegrationTest {
                 .build();
 
         Model savedModel = modelRepository.saveAndFlush(model);
+
         LocalDateTime originalCreatedAt = savedModel.getCreatedAt();
         LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt();
 
-        // Wait a bit to ensure timestamp difference
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
+        savedModel.setUpdatedAt(originalUpdatedAt.minusSeconds(1));
         savedModel.setName("FH 542");
+
         Model updatedModel = modelRepository.saveAndFlush(savedModel);
 
         assertEquals(originalCreatedAt, updatedModel.getCreatedAt());
@@ -349,8 +462,10 @@ public class ModelIntegrationTest {
     }
 
     @Test
-    void shouldNotUpdateTimestamps_OnIdempotentOperationWithoutPersistence() {
-        Brand brand = brandRepository.saveAndFlush(Brand.builder().name("Volvo").build());
+    void shouldNotChangeTimestampsOrVersion_WhenUpdatingWithSameName() {
+        Brand brand = brandRepository.saveAndFlush(
+                Brand.builder().name("Volvo").build()
+        );
 
         Model model = Model.builder()
                 .name("FH 540")
@@ -358,14 +473,25 @@ public class ModelIntegrationTest {
                 .build();
 
         Model savedModel = modelRepository.saveAndFlush(model);
+
         LocalDateTime originalCreatedAt = savedModel.getCreatedAt();
         LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt();
+        Long originalVersion = savedModel.getVersion();
+        Long modelId = savedModel.getId();
 
-        // Simulate idempotent operation: no change, no save
-        // Reload from database to verify no change
-        Model reloadedModel = modelRepository.findById(savedModel.getId()).orElseThrow();
+        modelService.update(
+                modelId,
+                new UpdateModelRequest("FH 540")
+        );
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Model reloadedModel = modelRepository.findById(modelId).orElseThrow();
 
         assertEquals(originalCreatedAt, reloadedModel.getCreatedAt());
         assertEquals(originalUpdatedAt, reloadedModel.getUpdatedAt());
+        assertEquals(originalVersion, reloadedModel.getVersion());
+        assertEquals("FH 540", reloadedModel.getName());
     }
 }
