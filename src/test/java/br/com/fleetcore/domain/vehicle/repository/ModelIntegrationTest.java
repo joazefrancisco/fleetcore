@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -474,8 +475,12 @@ class ModelIntegrationTest {
 
         Model savedModel = modelRepository.saveAndFlush(model);
 
-        LocalDateTime originalCreatedAt = savedModel.getCreatedAt();
-        LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt();
+        LocalDateTime originalCreatedAt = savedModel.getCreatedAt()
+                .truncatedTo(ChronoUnit.MICROS);
+
+        LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt()
+                .truncatedTo(ChronoUnit.MICROS);
+
         Long originalVersion = savedModel.getVersion();
         Long modelId = savedModel.getId();
 
