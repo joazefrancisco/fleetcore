@@ -20,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -88,7 +89,11 @@ public class ModelControllerTest {
     @Test
     void findAll_ShouldReturnActiveModelsByDefault_WhenStatusIsNotProvided() throws Exception {
         ModelSummary modelSummary = new ModelSummary(1L, "FH 540", 1L, "Volvo");
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
         var modelPage = new PageImpl<>(List.of(modelSummary), pageable, 1);
 
         when(modelService.findAll(null, null, pageable)).thenReturn(modelPage);
@@ -107,7 +112,11 @@ public class ModelControllerTest {
     @Test
     void findAll_ShouldReturnActiveModels_WhenStatusIsActive() throws Exception {
         ModelSummary modelSummary = new ModelSummary(1L, "FH 540", 1L, "Volvo");
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
         var modelPage = new PageImpl<>(List.of(modelSummary), pageable, 1);
 
         when(modelService.findAll(ModelStatusFilter.ACTIVE, null, pageable)).thenReturn(modelPage);
@@ -126,7 +135,11 @@ public class ModelControllerTest {
     @Test
     void findAll_ShouldReturnInactiveModels_WhenStatusIsInactive() throws Exception {
         ModelSummary modelSummary = new ModelSummary(1L, "FH 540", 1L, "Volvo");
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
         var modelPage = new PageImpl<>(List.of(modelSummary), pageable, 1);
 
         when(modelService.findAll(ModelStatusFilter.INACTIVE, null, pageable)).thenReturn(modelPage);
@@ -146,7 +159,11 @@ public class ModelControllerTest {
     void findAll_ShouldReturnAllModels_WhenStatusIsAll() throws Exception {
         ModelSummary volvo = new ModelSummary(1L, "FH 540", 1L, "Volvo");
         ModelSummary scania = new ModelSummary(2L, "P 410", 2L, "Scania");
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
         var modelPage = new PageImpl<>(List.of(volvo, scania), pageable, 2);
 
         when(modelService.findAll(ModelStatusFilter.ALL, null, pageable)).thenReturn(modelPage);
@@ -165,7 +182,11 @@ public class ModelControllerTest {
     @Test
     void findAll_ShouldReturnModelsByBrand_WhenBrandIdIsProvided() throws Exception {
         ModelSummary modelSummary = new ModelSummary(1L, "FH 540", 1L, "Volvo");
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
         var modelPage = new PageImpl<>(List.of(modelSummary), pageable, 1);
 
         when(modelService.findAll(null, 1L, pageable)).thenReturn(modelPage);

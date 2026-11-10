@@ -10,15 +10,12 @@ import br.com.fleetcore.domain.vehicle.exception.BrandAlreadyExistsException;
 import br.com.fleetcore.domain.vehicle.exception.BrandInactiveException;
 import br.com.fleetcore.domain.vehicle.exception.BrandNotFoundException;
 import br.com.fleetcore.domain.vehicle.service.BrandService;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -95,7 +92,10 @@ public class BrandControllerTest {
 
         BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
 
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name"));
 
         Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
 
@@ -120,7 +120,10 @@ public class BrandControllerTest {
 
         BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
 
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name"));
 
         Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
 
@@ -145,7 +148,10 @@ public class BrandControllerTest {
 
         BrandSummary brandSummary = new BrandSummary(1L, "Volvo");
 
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name"));
 
         Page<BrandSummary> brandPage = new PageImpl<>(List.of(brandSummary), pageable, 1);
 
@@ -171,7 +177,10 @@ public class BrandControllerTest {
         BrandSummary volvo = new BrandSummary(1L, "Volvo");
         BrandSummary scania = new BrandSummary(2L, "Scania");
 
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "name"));
 
         Page<BrandSummary> brandPage =
                 new PageImpl<>(List.of(volvo, scania), pageable, 2);

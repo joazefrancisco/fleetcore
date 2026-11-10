@@ -19,9 +19,15 @@ public interface ModelMapper {
     @Mapping(target = "brand", ignore = true)
     Model toEntity(CreateModelRequest request);
 
+    @Mapping(target = "brandId", source = "brand.id")
+    @Mapping(target = "brandName", source = "brand.name")
     ModelResponse toResponse(Model model);
 
+    @Mapping(target = "brandId", source = "brand.id")
+    @Mapping(target = "brandName", source = "brand.name")
     ModelSummary toSummary(Model model);
 
+    @Mapping(target = "brandId", source = "brand.id")
+    @Mapping(target = "brandName", source = "brand.name")
     ModelDetails toDetails(Model model);
 }

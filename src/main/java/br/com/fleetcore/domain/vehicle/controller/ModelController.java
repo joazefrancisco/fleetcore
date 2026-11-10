@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -71,7 +73,13 @@ public class ModelController {
             @RequestParam(required = false) ModelStatusFilter status,
             @Parameter(description = "Brand ID to filter models", example = "1")
             @RequestParam(required = false) Long brandId,
-            @ParameterObject Pageable pageable) {
+            @ParameterObject
+            @PageableDefault(
+                    size = 20,
+                    sort = "name",
+                    direction = Sort.Direction.ASC
+            )
+            Pageable pageable) {
 
         return ResponseEntity.ok(modelService.findAll(status, brandId, pageable));
     }
@@ -81,6 +89,8 @@ public class ModelController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Model found",
                     content = @Content(schema = @Schema(implementation = ModelDetails.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid model ID",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Model not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
