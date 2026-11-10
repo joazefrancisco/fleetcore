@@ -475,13 +475,14 @@ class ModelIntegrationTest {
 
         Model savedModel = modelRepository.saveAndFlush(model);
 
-        LocalDateTime originalCreatedAt = savedModel.getCreatedAt()
-                .truncatedTo(ChronoUnit.MICROS);
+        entityManager.clear();
 
-        LocalDateTime originalUpdatedAt = savedModel.getUpdatedAt()
-                .truncatedTo(ChronoUnit.MICROS);
+        Model persistedModel = modelRepository.findById(savedModel.getId())
+                .orElseThrow();
 
-        Long originalVersion = savedModel.getVersion();
+        LocalDateTime originalCreatedAt = persistedModel.getCreatedAt();
+        LocalDateTime originalUpdatedAt = persistedModel.getUpdatedAt();
+        Long originalVersion = persistedModel.getVersion();
         Long modelId = savedModel.getId();
 
         modelService.update(
