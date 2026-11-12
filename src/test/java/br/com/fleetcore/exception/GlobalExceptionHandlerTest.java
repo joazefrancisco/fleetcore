@@ -17,14 +17,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +50,21 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("BRAND_ALREADY_EXISTS", response.getBody().error());
         assertEquals("Brand already exists", response.getBody().message());
+    }
+
+    @Test
+    void handleDataIntegrityViolationException_ShouldReturnModelAlreadyExists_WhenConstraintIsModelNameUniqueness() {
+        DataIntegrityViolationException exception = buildExceptionWithConstraint("uk_model_name_lower");
+
+        when(request.getRequestURI()).thenReturn("/models");
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleDataIntegrityViolationException(exception, request);
+
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("MODEL_ALREADY_EXISTS", response.getBody().error());
+        assertEquals("Model already exists", response.getBody().message());
     }
 
     @Test
@@ -157,6 +172,23 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("BAD_REQUEST", response.getBody().error());
         assertEquals("Invalid parameter value", response.getBody().message());
+    }
+
+    @Test
+    void handleHttpMessageNotReadable_ShouldReturnBadRequest_WhenJsonIsMalformed(){
+        HttpMessageNotReadableException exception =
+                new HttpMessageNotReadableException("Malformed JSON request");
+
+        when(request.getRequestURI()).thenReturn("/brands");
+
+        ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(exception, request);
+
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("BAD_REQUEST", response.getBody().error());
+        assertEquals("Malformed JSON request", response.getBody().message());
+        assertEquals("/brands", response.getBody().path());
+        assertNull(response.getBody().errors());
     }
 
     @Test
